@@ -36,7 +36,7 @@ head(chr1)
 linelabel_chr = chr1[c('start', 'expression', 'gene')]
 colnames(linelabel_chr) = c('x', 'y', 'label')
 
-make.line.df.fan = function(data.df){
+make.line.df.fan = function(data.df, nudge_y){
     data.df2 = data.df
     data.df.naomit = data.df[!is.na(data.df$label), ]
     x2 = seq(
@@ -45,7 +45,7 @@ make.line.df.fan = function(data.df){
         length.out = nrow(data.df.naomit)
     )
 
-    y2 = max(data.df2$y) + (max(data.df2$y) / 5)
+    y2 = max(data.df2$y) + (max(data.df2$y) / 5) + nudge_y
 
     data.df2 = data.df.naomit
 
@@ -56,7 +56,7 @@ make.line.df.fan = function(data.df){
     verticallinedf1 = verticallinedf
     verticallinedf2 = verticallinedf
 
-    verticallinedf2$y = max(data.df2$y) + (max(data.df2$y) / 10)
+    verticallinedf2$y = max(data.df2$y) + (max(data.df2$y) / 10) + nudge_y
 
 
     vert.line.df = bind_rows(verticallinedf1, verticallinedf2)
@@ -67,7 +67,7 @@ make.line.df.fan = function(data.df){
     linelabeldf2$x = x2
     linelabeldf2$y = y2
 
-    linelabeldf1$y = max(data.df2$y) + (max(data.df2$y) / 10)
+    linelabeldf1$y = max(data.df2$y) + (max(data.df2$y) / 10) + nudge_y
 
     data.df3 = bind_rows(linelabeldf1, linelabeldf2)
     data.df3$label = data.df2$label
@@ -79,7 +79,7 @@ make.line.df.fan = function(data.df){
 }
 
 
-make.line.df.star = function(data.df){
+make.line.df.star = function(data.df, nudge_y = 0){
     data.df2 = data.df
     x2 = data.df2$x
 
@@ -97,7 +97,7 @@ make.line.df.star = function(data.df){
         #max(data.df2$x) / nrow(data.df2)
     #)
 
-    y2 = max(data.df2$y) + (max(data.df2$y) / 5)
+    y2 = max(data.df2$y) + (max(data.df2$y) / 5) + nudge_y
 
     data.df2$group = 1:nrow(data.df2)
     order(data.df2$x)
@@ -112,91 +112,115 @@ make.line.df.star = function(data.df){
     data.df3 = bind_rows(linelabeldf1, linelabeldf2)
 
 
-    correct.intersects = function(data.df3){
-        x2.coord = (nrow(data.df3) / 2)
-        x2.coord = x2.coord + 1
-        x2 = data.df3$x[x2.coord:nrow(data.df3)]
+    #correct.intersects = function(data.df3){
+        #x2.coord = (nrow(data.df3) / 2)
+        #x2.coord = x2.coord + 1
+        #x2 = data.df3$x[x2.coord:nrow(data.df3)]
 
-        data.df3.split = split(data.df3, data.df3$group)
-        data.df3.split[[1]]
+        #data.df3.split = split(data.df3, data.df3$group)
+        #data.df3.split[[1]]
 
-        buf1 = max(data.df3$x) / 10
-        x.buf.vals = as.numeric()
-        data.df3.split
-        for(i in 2:length(data.df3.split)){
-            intersect.bool = check_intersect(
-                c(data.df3.split[[i]]$x[1], data.df3.split[[i]]$y[1]),
-                c(data.df3.split[[i]]$x[2], data.df3.split[[i]]$y[2]),
-                c(data.df3.split[[i - 1]]$x[1], data.df3.split[[i - 1]]$y[1]),
-                c(data.df3.split[[i - 1]]$x[2], data.df3.split[[i - 1]]$y[2])
-            )
+        #buf1 = max(data.df3$x) / 10
+        #x.buf.vals = as.numeric()
+        #data.df3.split
+        #for(i in 2:length(data.df3.split)){
+            #intersect.bool = check_intersect(
+                #c(data.df3.split[[i]]$x[1], data.df3.split[[i]]$y[1]),
+                #c(data.df3.split[[i]]$x[2], data.df3.split[[i]]$y[2]),
+                #c(data.df3.split[[i - 1]]$x[1], data.df3.split[[i - 1]]$y[1]),
+                #c(data.df3.split[[i - 1]]$x[2], data.df3.split[[i - 1]]$y[2])
+            #)
 
-            if(intersect.bool){
-                df1 = data.df3.split[[i - 1]]
-                df2 = data.df3.split[[i]]
+            #if(intersect.bool){
+                #df1 = data.df3.split[[i - 1]]
+                #df2 = data.df3.split[[i]]
 
-                #is the max of the first point before the min of the second or after?
+                ##is the max of the first point before the min of the second or after?
 
-                x.diff = df1$x[which.max(df1$y)] - df2$x[which.min(df2$y)]
-                x.buf.vals = c(x.buf.vals, x.diff) 
-                #test.df = bind_rows(data.df3.split[[i - 1]], data.df3.split[[i]])
-                #pl(
-                    #ggplot(test.df, aes(x = x, y = y, group = group)) + geom_line() +
-                        #coord_cartesian(ylim = c(0, 200), xlim = c(min(data.df3$x), max(data.df3$x)))
-                #)
-            } else {
-                x.buf.vals = c(x.buf.vals, 0)
-            }
-        }
+                #x.diff = df1$x[which.max(df1$y)] - df2$x[which.min(df2$y)]
+                #x.buf.vals = c(x.buf.vals, x.diff) 
+                ##test.df = bind_rows(data.df3.split[[i - 1]], data.df3.split[[i]])
+                ##pl(
+                    ##ggplot(test.df, aes(x = x, y = y, group = group)) + geom_line() +
+                        ##coord_cartesian(ylim = c(0, 200), xlim = c(min(data.df3$x), max(data.df3$x)))
+                ##)
+            #} else {
+                #x.buf.vals = c(x.buf.vals, 0)
+            #}
+        #}
 
-        x.buf.vals = c(x.buf.vals, 0)
+        #x.buf.vals = c(x.buf.vals, 0)
 
-        for(i in 1:length(x.buf.vals)){
-            if(x.buf.vals[[i]] > 0){
-                #x2[1:i] - x.buf.vals[[i]] - buf1
-                x2[1:i] = x2[1:i] * (x2[[i]] - x.buf.vals[[i]]) / x2[[i]] 
-            } else if(x.buf.vals[[i]] < 0){
-                x2.max = max(x2)
-                x2[i:length(x2)] = x2[i:length(x2)] - x.buf.vals[[i]] + buf1
-                x2[i:length(x2)] = x2[i:length(x2)] * (x2.max / max(x2[i:length(x2)]))
-            }
-        }
+        #for(i in 1:length(x.buf.vals)){
+            #if(x.buf.vals[[i]] > 0){
+                ##x2[1:i] - x.buf.vals[[i]] - buf1
+                #x2[1:i] = x2[1:i] * (x2[[i]] - x.buf.vals[[i]]) / x2[[i]] 
+            #} else if(x.buf.vals[[i]] < 0){
+                #x2.max = max(x2)
+                #x2[i:length(x2)] = x2[i:length(x2)] - x.buf.vals[[i]] + buf1
+                #x2[i:length(x2)] = x2[i:length(x2)] * (x2.max / max(x2[i:length(x2)]))
+            #}
+        #}
 
 
-        if(any(x2 < 0)) x2 = x2 + abs(min(x2))
+        #if(any(x2 < 0)) x2 = x2 + abs(min(x2))
 
-        x2 = x2 * (max(data.df3$x) / max(x2))
+        #x2 = x2 * (max(data.df3$x) / max(x2))
 
-        x2.coord = (nrow(data.df3) / 2)
-        x2.coord = x2.coord + 1
-        data.df3[x2.coord:nrow(data.df3), ]$x = x2
-        data.df3
-    }
+        #x2.coord = (nrow(data.df3) / 2)
+        #x2.coord = x2.coord + 1
+        #data.df3[x2.coord:nrow(data.df3), ]$x = x2
+        #data.df3
+    #}
 
-    #data.df3 = correct.intersects(data.df3)
-    #data.df3 = correct.intersects(data.df3)
-    #data.df3 = correct.intersects(data.df3)
-    #data.df3 = correct.intersects(data.df3)
     #data.df3 = correct.intersects(data.df3)
     #for(i in 1:100){
         #data.df3 = correct.intersects(data.df3)
         #print(i)
     #}
+
     data.df3
 }
 
-make.line.df.cloud = function(data.df){
+
+make.line.df.straight = function(data.df){
+    data.df2 = data.df
+    x2 = data.df2$x
+
+    nudge_y = unique(data.df$nudge_y)
+
+    y2 = max(data.df2$y) + (max(data.df2$y) / 5) + nudge_y
+
+    data.df2$group = 1:nrow(data.df2)
+    order(data.df2$x)
+
+    linelabeldf = data.df2
+    linelabeldf1 = linelabeldf
+    linelabeldf2 = linelabeldf
+
+    linelabeldf2$x = x2
+    linelabeldf2$y = y2
+
+    data.df3 = bind_rows(linelabeldf1, linelabeldf2)
+    data.df3
+}
+
+
+make.line.df.cloud = function(data.df, nudge_y){
+    #makes horizontal line for cloud layout
     data.df2 = data.df[c('x', 'y')]
     data.df2 = data.df[1:2, ]
     data.df2$x = c(min(data.df$x), max(data.df$x))
-    data.df2$y = c(max(data.df$y) + max(data.df$y) / 10, max(data.df$y) + max(data.df$y) / 10)
+    data.df2$y = c(max(data.df$y) + max(data.df$y) / 10 + nudge_y, max(data.df$y) + max(data.df$y) / 10 + nudge_y)
     data.df2
 }
 
 
-make.line.df.cloud2 = function(data.df){
+make.line.df.cloud2 = function(data.df, nudge_y = 0){
+    #makes fan lines for cloud layout
     data.df
     data.df.naomit = data.df[!is.na(data.df$label), ]
+
 
     x2 = seq(
         min(data.df$x),
@@ -206,13 +230,13 @@ make.line.df.cloud2 = function(data.df){
 
     data.df = data.df.naomit
 
-    y2 = max(data.df$y) + (max(data.df$y) / 5)
+    y2 = max(data.df$y) + (max(data.df$y) / 5) + nudge_y
 
     data.df$group = 1:nrow(data.df)
     order(data.df$x)
 
     linelabeldf1 = data.df
-    linelabeldf1$y = max(data.df$y) + max(data.df$y) / 10
+    linelabeldf1$y = max(data.df$y) + (max(data.df$y) / 10) + nudge_y
 
     linelabeldf2 = data.df
     linelabeldf2$x = x2
@@ -222,17 +246,17 @@ make.line.df.cloud2 = function(data.df){
     data.df3
 }
 
-make.line.df.cloud3 = function(data.df){
+make.line.df.cloud3 = function(data.df, nudge_y){
     #makes points for cloud layout
     data.df = data.df[!is.na(data.df$label), ]
     data.df2 = data.df[c('x', 'y')]
 
-    data.df2$y = max(data.df$y) + max(data.df$y) / 10
+    data.df2$y = max(data.df$y) + max(data.df$y) / 10 + nudge_y
     data.df2
 }
 
-make.label.df = function(data.df){
-    data.df$y = max(data.df$y) + max(data.df$y) / 5
+make.label.df = function(data.df, nudge_y = 0){
+    data.df$y = max(data.df$y) + (max(data.df$y) / 5) + nudge_y
     data.df.naomit = data.df[!is.na(data.df$label), ]
     x2 = seq(
         min(data.df$x),
@@ -359,13 +383,17 @@ GeomLineLabel <- ggproto("GeomLineLabel", Geom,
     default_aes = aes(shape = 19, colour = "black", linetype = 'dotted',
         text.size = 4, angle = 90, hjust = 0,
         vjust = 0.5, alpha = NA, family = "", fontface = 1, lineheight = 1.2,
-        layout = 'cloud'
+        layout = 'cloud',
+        nudge_y = 0,
+        nudge_x = 0
         ),
     draw_key = draw_key_point,
 
     draw_panel = function(data, panel_params, coord , arrow = NULL,
         lineend = "butt", linejoin = "round", linemitre = 10,
         na.rm = FALSE, linetype = 'solid'){ 
+
+        nudge_y = unique(data$nudge_y)
        ############################
        #GEOM_PATH DRAW FUNCTION 
        ############################ 
@@ -386,7 +414,7 @@ GeomLineLabel <- ggproto("GeomLineLabel", Geom,
             ############################
 
             # must be sorted on group
-            data.cloud2 = make.line.df.cloud2(data)
+            data.cloud2 = make.line.df.cloud2(data, nudge_y)
             data.cloud2 <- data.cloud2[order(data.cloud2$group), , drop = FALSE]
             munched <- coord_munch(coord, data.cloud2, panel_params)
 
@@ -421,7 +449,7 @@ GeomLineLabel <- ggproto("GeomLineLabel", Geom,
             #LINE ELEMENT 
             ############################
 
-            data.cloud = make.line.df.cloud(data)
+            data.cloud = make.line.df.cloud(data, nudge_y)
             #data.cloud = data
             coords <- coord$transform(data.cloud, panel_params)
             #coords <- coord$transform(data, panel_params)
@@ -444,7 +472,7 @@ GeomLineLabel <- ggproto("GeomLineLabel", Geom,
             #POINT ELEMENTS 
             ############################
 
-            data.cloud3 = make.line.df.cloud3(data)
+            data.cloud3 = make.line.df.cloud3(data, nudge_y)
             coords <- coord$transform(data.cloud3, panel_params)
             point_elements = grid::pointsGrob(
                 coords$x, coords$y,
@@ -457,7 +485,7 @@ GeomLineLabel <- ggproto("GeomLineLabel", Geom,
             #LABEL ELEMENTS 
             ############################
 
-            data.label = make.label.df(data)
+            data.label = make.label.df(data, nudge_y)
 
             lab <- data.label$label
             lab <- parse_safe(as.character(lab))
@@ -492,7 +520,7 @@ GeomLineLabel <- ggproto("GeomLineLabel", Geom,
             ############################
 
             # must be sorted on group
-            data.fan = make.line.df.fan(data)
+            data.fan = make.line.df.fan(data, nudge_y)
             data.fan <- data.fan[order(data.fan$group), , drop = FALSE]
             munched <- coord_munch(coord, data.fan, panel_params)
 
@@ -527,7 +555,7 @@ GeomLineLabel <- ggproto("GeomLineLabel", Geom,
             #LABEL ELEMENTS 
             ############################
 
-            data.label = make.label.df(data)
+            data.label = make.label.df(data, nudge_y)
 
             lab <- data.label$label
             lab <- parse_safe(as.character(lab))
@@ -563,7 +591,7 @@ GeomLineLabel <- ggproto("GeomLineLabel", Geom,
             ############################
             # must be sorted on group
             data.star = data[!is.na(data$label), ]
-            data.star = make.line.df.star(data.star)
+            data.star = make.line.df.star(data.star, nudge_y)
             data.star <- data.star[order(data.star$group), , drop = FALSE]
             munched <- coord_munch(coord, data.star, panel_params)
 
@@ -601,7 +629,7 @@ GeomLineLabel <- ggproto("GeomLineLabel", Geom,
             #LABEL ELEMENTS 
             ############################
 
-            data.label = make.label.df(data)
+            data.label = make.label.df(data, nudge_y)
             data.label$x = data.star.x2
 
             lab <- data.label$label
@@ -633,6 +661,91 @@ GeomLineLabel <- ggproto("GeomLineLabel", Geom,
             gList(path_elements, label_elements)
 
 
+        } else if(unique(data$layout) == 'straight'){
+            ############################
+            #STAR ELEMENTS 
+            ############################
+            # must be sorted on group
+            data.straight = data[!is.na(data$label), ]
+            data.straight = make.line.df.straight(data.straight)
+            data.straight <- data.straight[order(data.straight$group), , drop = FALSE]
+            munched <- coord_munch(coord, data.straight, panel_params)
+
+            # Silently drop lines with less than two points, preserving order
+            rows <- stats::ave(seq_len(nrow(munched)), munched$group, FUN = length)
+            munched <- munched[rows >= 2, ]
+            if (nrow(munched) < 2) return(zeroGrob())
+
+            # Work out grouping variables for grobs
+            n <- nrow(munched)
+            group_diff <- munched$group[-1] != munched$group[-n]
+            start <- c(TRUE, group_diff)
+            end <-   c(group_diff, TRUE)
+
+            id <- match(munched$group, unique(munched$group))
+
+            #head(munched)
+            #munched$y 
+            #ylim1 = panel_params$y$get_limits()
+            #ylim1
+
+            path_elements = polylineGrob(
+                munched$x, munched$y, id = id,
+                default.units = "native", arrow = arrow,
+                gp = gpar(
+                  col = alpha(munched$colour, munched$alpha)[start],
+                  fill = alpha(munched$colour, munched$alpha)[start],
+                  #lwd = munched$size[start] * .pt,
+                  lwd = 1,
+                  lty = munched$linetype[start],
+                  lineend = lineend,
+                  linejoin = linejoin,
+                  linemitre = linemitre
+                )
+            )
+
+            data.straight.split = split(data.straight, data.straight$group)
+            data.straight.x2 = bind_rows(lapply(data.straight.split, function(x) x[2, ]))$x
+
+            ############################
+            #LABEL ELEMENTS 
+            ############################
+
+            data.label = make.label.df(data)
+            data.label$y = data.label$y + unique(data.label$nudge_y)
+            data.label$x = data.straight.x2
+
+            lab <- data.label$label
+            lab <- parse_safe(as.character(lab))
+
+            data.label <- coord$transform(data.label, panel_params)
+
+            if (is.character(data.label$vjust)) {
+              data.label$vjust <- compute_just(data.label$vjust, data.label$y, data.label$x, data.label$angle)
+            }
+            if (is.character(data.label$hjust)) {
+              data.label$hjust <- compute_just(data.label$hjust, data.label$x, data.label$y, data.label$angle)
+            }
+
+            make.label.df(data)
+            data.label
+
+            label_elements = textGrob(
+              lab,
+              data.label$x, data.label$y, default.units = "native",
+              hjust = data.label$hjust, vjust = data.label$vjust,
+              rot = data.label$angle,
+              gp = gpar(
+                col = alpha(data.label$colour, data.label$alpha),
+                fontsize = data.label$text.size * .pt,
+                fontfamily = data.label$family,
+                fontface = data.label$fontface,
+                lineheight = data.label$lineheight
+              )
+            )
+
+            gList(path_elements, label_elements)
+
         }
 
     }
@@ -663,7 +776,12 @@ topnum = 100
 library(ggrepel)
 
 chr1.new = chr1
-chr1.new[sample(1:100, 70), ]$gene = NA
+#chr1.new[sample(1:100, 70), ]$gene = NA
+
+expression.gen = rnorm(100)
+expression.gen[expression.gen < 0] = 0
+expression.gen = expression.gen * 100
+chr1.new$expression = expression.gen
 
 
 plot.ggrepel = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = gene)) + 
@@ -677,19 +795,38 @@ plot.ggrepel = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label
         segment.color = "grey50",
         segment.linetype = 'dotted'
         ) +
-    scale_y_continuous(limits = c(NA, 200)) +
+    scale_y_continuous(limits = c(NA, 180))
     #geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'star', linetype = 'dotted') +
     #geom_simple_point(colour = '#d8d654', linetype = 'dashed') +
-    coord_cartesian(ylim = c(0, 210))
 
 pl(plot.ggrepel)
 
+chr1.new$sig.genes = NA
+chr1.new$sig.genes[chr1.new$expression > 100] = chr1.new$gene[chr1.new$expression > 100]
+
+plot.star = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = sig.genes)) + 
+    geom_point() +
+    geom_line() +
+    geom_linelabel(layout = 'star', nudge_y = -50) +
+    scale_y_continuous(limits = c(NA, 300))
+    #coord_cartesian(ylim = c(0, 400))
+
+pl(plot.star)
+
+plot.straight = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = sig.genes)) + 
+    geom_point() +
+    geom_line() +
+    geom_linelabel(layout = 'straight', nudge_y = -20) +
+    scale_y_continuous(limits = c(NA, 300))
+    #coord_cartesian(ylim = c(0, 400))
+
+pl(plot.straight)
+
 plot.cloud = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = gene)) + 
-    #geom_point() +
-    #geom_line() +
-    geom_linelabel(layout = 'cloud') +
-    coord_cartesian(ylim = c(0, 210)) +
-    theme_void()
+    geom_point() +
+    geom_line() +
+    geom_linelabel(layout = 'cloud', nudge_y = -20, text.size = 2) +
+    coord_cartesian(ylim = c(0, 300)) 
 
 pl(plot.cloud)
 
@@ -697,18 +834,10 @@ pl(plot.cloud)
 plot.fan = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = gene)) + 
     geom_point() +
     geom_line() +
-    geom_linelabel(layout = 'fan') +
+    geom_linelabel(layout = 'fan', nudge_y = -200) +
     coord_cartesian(ylim = c(0, 210))
 
 pl(plot.fan)
-
-plot.star = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = gene)) + 
-    geom_point() +
-    geom_line() +
-    geom_linelabel(layout = 'star') +
-    coord_cartesian(ylim = c(0, 210))
-
-pl(plot.star)
 
 
 #geom_text(aes(label = gene))
