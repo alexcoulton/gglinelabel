@@ -1,4 +1,7 @@
 load_all('~/work/external.repos/ggplot2_testing/')
+
+source('~/work/external.repos/IceCast/R/selfIntersections.R')
+
 library(reshape2)
 source('~/work/ucl/scripts/misc/functions.R')
 library(devtools)
@@ -33,36 +36,34 @@ head(chr1)
 linelabel_chr = chr1[c('start', 'expression', 'gene')]
 colnames(linelabel_chr) = c('x', 'y', 'label')
 
-make.line.df.fan = function(data.df){
-    data.df2 = data.df[c('x', 'y')]
-    data.df2$linelabelx = seq(
+make.line.df.fan = function(data.df){ data.df2 = data.df[c('x', 'y')]
+    data.df2 = data.df
+    x2 = seq(
         min(data.df2$x),
         max(data.df2$x),
-        max(data.df2$x) / nrow(data.df2)
+        length.out = nrow(data.df)
     )
 
-    data.df2$linelabely = max(data.df2$y) + (max(data.df2$y) / 5)
+    y2 = max(data.df2$y) + (max(data.df2$y) / 5)
 
     data.df2$group = 1:nrow(data.df2)
     order(data.df2$x)
 
     verticallinedf = data.df2
-    colnames(verticallinedf) = c('x1', 'y1', 'x2', 'y2', 'group')
-    verticallinedf1 = verticallinedf[c('x1', 'y1', 'group')]
-    verticallinedf2 = verticallinedf[c('x2', 'y2', 'group')]
-    colnames(verticallinedf1) = c('x', 'y', 'group')
-    colnames(verticallinedf2) = c('x', 'y', 'group')
-    verticallinedf2$x = verticallinedf1$x
+    #colnames(verticallinedf) = c('x1', 'y1', 'x2', 'y2', 'group')
+    verticallinedf1 = verticallinedf
+    verticallinedf2 = verticallinedf
+
     verticallinedf2$y = max(data.df2$y) + (max(data.df2$y) / 10)
+
 
     vert.line.df = bind_rows(verticallinedf1, verticallinedf2)
 
     linelabeldf = data.df2
-    colnames(linelabeldf) = c('x1', 'y1', 'x2', 'y2', 'group')
-    linelabeldf1 = linelabeldf[c('x1', 'y1', 'group')]
-    linelabeldf2 = linelabeldf[c('x2', 'y2', 'group')]
-    colnames(linelabeldf1) = c('x', 'y', 'group')
-    colnames(linelabeldf2) = c('x', 'y', 'group')
+    linelabeldf1 = linelabeldf
+    linelabeldf2 = linelabeldf
+    linelabeldf2$x = x2
+    linelabeldf2$y = y2
 
     linelabeldf1$y = max(data.df2$y) + (max(data.df2$y) / 10)
 
@@ -77,28 +78,108 @@ make.line.df.fan = function(data.df){
 
 
 make.line.df.star = function(data.df){
-    data.df2 = data.df[c('x', 'y')]
-    data.df2$linelabelx = seq(
-        min(data.df2$x),
-        max(data.df2$x),
-        max(data.df2$x) / nrow(data.df2)
-    )
+    data.df2 = data.df
+    x2 = data.df2$x
 
-    data.df2$linelabely = max(data.df2$y) + (max(data.df2$y) / 5)
+    spread.x = function(x){
+        for(i in 2:(length(x) - 1)){
+            x[i] = (x[i + 1] + x[i - 1]) / 2
+        }
+        x
+    }
+
+    x2 = spread.x(x2)
+    #x2 = seq(
+        #min(data.df2$x),
+        #max(data.df2$x),
+        #max(data.df2$x) / nrow(data.df2)
+    #)
+
+    y2 = max(data.df2$y) + (max(data.df2$y) / 5)
 
     data.df2$group = 1:nrow(data.df2)
     order(data.df2$x)
 
     linelabeldf = data.df2
-    colnames(linelabeldf) = c('x1', 'y1', 'x2', 'y2', 'group')
-    linelabeldf1 = linelabeldf[c('x1', 'y1', 'group')]
-    linelabeldf2 = linelabeldf[c('x2', 'y2', 'group')]
-    colnames(linelabeldf1) = c('x', 'y', 'group')
-    colnames(linelabeldf2) = c('x', 'y', 'group')
+    linelabeldf1 = linelabeldf
+    linelabeldf2 = linelabeldf
 
+    linelabeldf2$x = x2
+    linelabeldf2$y = y2
 
     data.df3 = bind_rows(linelabeldf1, linelabeldf2)
-    data.df3$label = data.df$label
+
+
+    correct.intersects = function(data.df3){
+        x2.coord = (nrow(data.df3) / 2)
+        x2.coord = x2.coord + 1
+        x2 = data.df3$x[x2.coord:nrow(data.df3)]
+
+        data.df3.split = split(data.df3, data.df3$group)
+        data.df3.split[[1]]
+
+        buf1 = max(data.df3$x) / 10
+        x.buf.vals = as.numeric()
+        data.df3.split
+        for(i in 2:length(data.df3.split)){
+            intersect.bool = check_intersect(
+                c(data.df3.split[[i]]$x[1], data.df3.split[[i]]$y[1]),
+                c(data.df3.split[[i]]$x[2], data.df3.split[[i]]$y[2]),
+                c(data.df3.split[[i - 1]]$x[1], data.df3.split[[i - 1]]$y[1]),
+                c(data.df3.split[[i - 1]]$x[2], data.df3.split[[i - 1]]$y[2])
+            )
+
+            if(intersect.bool){
+                df1 = data.df3.split[[i - 1]]
+                df2 = data.df3.split[[i]]
+
+                #is the max of the first point before the min of the second or after?
+
+                x.diff = df1$x[which.max(df1$y)] - df2$x[which.min(df2$y)]
+                x.buf.vals = c(x.buf.vals, x.diff) 
+                #test.df = bind_rows(data.df3.split[[i - 1]], data.df3.split[[i]])
+                #pl(
+                    #ggplot(test.df, aes(x = x, y = y, group = group)) + geom_line() +
+                        #coord_cartesian(ylim = c(0, 200), xlim = c(min(data.df3$x), max(data.df3$x)))
+                #)
+            } else {
+                x.buf.vals = c(x.buf.vals, 0)
+            }
+        }
+
+        x.buf.vals = c(x.buf.vals, 0)
+
+        for(i in 1:length(x.buf.vals)){
+            if(x.buf.vals[[i]] > 0){
+                #x2[1:i] - x.buf.vals[[i]] - buf1
+                x2[1:i] = x2[1:i] * (x2[[i]] - x.buf.vals[[i]]) / x2[[i]] 
+            } else if(x.buf.vals[[i]] < 0){
+                x2.max = max(x2)
+                x2[i:length(x2)] = x2[i:length(x2)] - x.buf.vals[[i]] + buf1
+                x2[i:length(x2)] = x2[i:length(x2)] * (x2.max / max(x2[i:length(x2)]))
+            }
+        }
+
+
+        if(any(x2 < 0)) x2 = x2 + abs(min(x2))
+
+        x2 = x2 * (max(data.df3$x) / max(x2))
+
+        x2.coord = (nrow(data.df3) / 2)
+        x2.coord = x2.coord + 1
+        data.df3[x2.coord:nrow(data.df3), ]$x = x2
+        data.df3
+    }
+
+    #data.df3 = correct.intersects(data.df3)
+    #data.df3 = correct.intersects(data.df3)
+    #data.df3 = correct.intersects(data.df3)
+    #data.df3 = correct.intersects(data.df3)
+    #data.df3 = correct.intersects(data.df3)
+    #for(i in 1:100){
+        #data.df3 = correct.intersects(data.df3)
+        #print(i)
+    #}
     data.df3
 }
 
@@ -113,13 +194,18 @@ make.line.df.cloud = function(data.df){
 
 make.line.df.cloud2 = function(data.df){
     data.df
-    head(data.df)
-    #data.df2 = data.df[c('x', 'y')]
+    data.df.naomit = data.df[!is.na(data.df$label), ]
+
+
     x2 = seq(
         min(data.df$x),
         max(data.df$x),
-        max(data.df$x) / nrow(data.df)
+        length.out = nrow(data.df.naomit)
     )
+
+    data.df = data.df.naomit
+
+    x2 is.na(data.df$label)
 
     y2 = max(data.df$y) + (max(data.df$y) / 5)
 
@@ -149,7 +235,7 @@ make.label.df = function(data.df){
     data.df$x = seq(
         min(data.df$x),
         max(data.df$x),
-        max(data.df$x) / nrow(data.df)
+        length.out = nrow(data.df)
     )
     data.df
 }
@@ -268,7 +354,8 @@ GeomSimplePoint <- ggproto("GeomSimplePoint", Geom,
     required_aes = c("x", "y"),
     default_aes = aes(shape = 19, colour = "black", linetype = 'solid',
         text.size = 3.88, angle = 0, hjust = 0.5,
-        vjust = 0.5, alpha = NA, family = "", fontface = 1, lineheight = 1.2
+        vjust = 0.5, alpha = NA, family = "", fontface = 1, lineheight = 1.2,
+        layout = 'cloud'
         ),
     draw_key = draw_key_point,
 
@@ -283,108 +370,266 @@ GeomSimplePoint <- ggproto("GeomSimplePoint", Geom,
             "Do you need to adjust the group aesthetic?")
         }
 
-        # must be sorted on group
-        data.cloud2 = make.line.df.cloud2(data)
-        data.cloud2 <- data.cloud2[order(data.cloud2$group), , drop = FALSE]
-        munched <- coord_munch(coord, data.cloud2, panel_params)
+        #if(any(is.na(data$label))){
+            #message_wrap("geom_linelabel: Some labels are NA; removing these.")
+            #data = data[!is.na(data$label), ]
+        #}
 
-        # Silently drop lines with less than two points, preserving order
-        rows <- stats::ave(seq_len(nrow(munched)), munched$group, FUN = length)
-        munched <- munched[rows >= 2, ]
-        if (nrow(munched) < 2) return(zeroGrob())
+        if(unique(data$layout) == 'cloud'){
 
-        # Work out grouping variables for grobs
-        n <- nrow(munched)
-        group_diff <- munched$group[-1] != munched$group[-n]
-        start <- c(TRUE, group_diff)
-        end <-   c(group_diff, TRUE)
+            ############################
+            #PATH ELEMENTS 
+            ############################
 
-        id <- match(munched$group, unique(munched$group))
-        path_elements = polylineGrob(
-            munched$x, munched$y, id = id,
-            default.units = "native", arrow = arrow,
-            gp = gpar(
-              col = alpha(munched$colour, munched$alpha)[start],
-              fill = alpha(munched$colour, munched$alpha)[start],
-              #lwd = munched$size[start] * .pt,
-              lwd = 1,
-              lty = munched$linetype[start],
-              lineend = lineend,
-              linejoin = linejoin,
-              linemitre = linemitre
+            # must be sorted on group
+            data.cloud2 = make.line.df.cloud2(data)
+            data.cloud2 <- data.cloud2[order(data.cloud2$group), , drop = FALSE]
+            munched <- coord_munch(coord, data.cloud2, panel_params)
+
+            # Silently drop lines with less than two points, preserving order
+            rows <- stats::ave(seq_len(nrow(munched)), munched$group, FUN = length)
+            munched <- munched[rows >= 2, ]
+            if (nrow(munched) < 2) return(zeroGrob())
+
+            # Work out grouping variables for grobs
+            n <- nrow(munched)
+            group_diff <- munched$group[-1] != munched$group[-n]
+            start <- c(TRUE, group_diff)
+            end <-   c(group_diff, TRUE)
+
+            id <- match(munched$group, unique(munched$group))
+            path_elements = polylineGrob(
+                munched$x, munched$y, id = id,
+                default.units = "native", arrow = arrow,
+                gp = gpar(
+                  col = alpha(munched$colour, munched$alpha)[start],
+                  fill = alpha(munched$colour, munched$alpha)[start],
+                  #lwd = munched$size[start] * .pt,
+                  lwd = 1,
+                  lty = munched$linetype[start],
+                  lineend = lineend,
+                  linejoin = linejoin,
+                  linemitre = linemitre
+                )
             )
-        )
 
-        cloud1 = make.line.df.cloud(data)
-        cloud2 = make.line.df.cloud2(data)
-        cloud3 = make.line.df.cloud3(data)
+            ############################
+            #LINE ELEMENT 
+            ############################
 
-        data.cloud = make.line.df.cloud(data)
-        #data.cloud = data
-        coords <- coord$transform(data.cloud, panel_params)
-        #coords <- coord$transform(data, panel_params)
+            data.cloud = make.line.df.cloud(data)
+            #data.cloud = data
+            coords <- coord$transform(data.cloud, panel_params)
+            #coords <- coord$transform(data, panel_params)
 
-        lwd1 = coords$size * .pt
-        if(length(lwd1) == 0) lwd1 = NULL
-        line_elements = grid::linesGrob(
-            coords$x, coords$y, 
-            default.units = "native",
-            gp = grid::gpar(
-                col = coords$colour,
-                lwd = lwd1,
-                lty = coords$linetype
+            coords$linetype = 'solid'
+
+            lwd1 = coords$size * .pt
+            if(length(lwd1) == 0) lwd1 = NULL
+            line_elements = grid::linesGrob(
+                coords$x, coords$y, 
+                default.units = "native",
+                gp = grid::gpar(
+                    col = coords$colour,
+                    lwd = lwd1,
+                    lty = coords$linetype
+                )
             )
-        )
 
-        data.cloud3 = make.line.df.cloud3(data)
-        coords <- coord$transform(data.cloud3, panel_params)
-        point_elements = grid::pointsGrob(
-            coords$x, coords$y,
-            #pch = coords$shape,
-            size = unit(1, 'mm'),
-            gp = grid::gpar(col = coords$colour)
-        )
+            ############################
+            #POINT ELEMENTS 
+            ############################
 
-        ############################
-        #LABEL ELEMENTS 
-        ############################
+            data.cloud3 = make.line.df.cloud3(data)
+            coords <- coord$transform(data.cloud3, panel_params)
+            point_elements = grid::pointsGrob(
+                coords$x, coords$y,
+                #pch = coords$shape,
+                size = unit(1, 'mm'),
+                gp = grid::gpar(col = coords$colour)
+            )
 
-        data.label = make.label.df(data)
+            ############################
+            #LABEL ELEMENTS 
+            ############################
 
-        lab <- data.label$label
-        lab <- parse_safe(as.character(lab))
+            data.label = make.label.df(data)
 
-        data.label <- coord$transform(data.label, panel_params)
+            lab <- data.label$label
+            lab <- parse_safe(as.character(lab))
 
-        if (is.character(data.label$vjust)) {
-          data.label$vjust <- compute_just(data.label$vjust, data.label$y, data.label$x, data.label$angle)
+            data.label <- coord$transform(data.label, panel_params)
+
+            if (is.character(data.label$vjust)) {
+              data.label$vjust <- compute_just(data.label$vjust, data.label$y, data.label$x, data.label$angle)
+            }
+            if (is.character(data.label$hjust)) {
+              data.label$hjust <- compute_just(data.label$hjust, data.label$x, data.label$y, data.label$angle)
+            }
+
+            label_elements = textGrob(
+              lab,
+              data.label$x, data.label$y, default.units = "native",
+              hjust = data.label$hjust, vjust = data.label$vjust,
+              rot = data.label$angle,
+              gp = gpar(
+                col = alpha(data.label$colour, data.label$alpha),
+                fontsize = data.label$text.size * .pt,
+                fontfamily = data.label$family,
+                fontface = data.label$fontface,
+                lineheight = data.label$lineheight
+              )
+            )
+
+            gList(line_elements, point_elements, path_elements, label_elements)
+        } else if(unique(data$layout) == 'fan'){
+            ############################
+            #FAN ELEMENTS 
+            ############################
+
+            # must be sorted on group
+            data.fan = make.line.df.fan(data)
+            data.fan <- data.fan[order(data.fan$group), , drop = FALSE]
+            munched <- coord_munch(coord, data.fan, panel_params)
+
+            # Silently drop lines with less than two points, preserving order
+            rows <- stats::ave(seq_len(nrow(munched)), munched$group, FUN = length)
+            munched <- munched[rows >= 2, ]
+            if (nrow(munched) < 2) return(zeroGrob())
+
+            # Work out grouping variables for grobs
+            n <- nrow(munched)
+            group_diff <- munched$group[-1] != munched$group[-n]
+            start <- c(TRUE, group_diff)
+            end <-   c(group_diff, TRUE)
+
+            id <- match(munched$group, unique(munched$group))
+            path_elements = polylineGrob(
+                munched$x, munched$y, id = id,
+                default.units = "native", arrow = arrow,
+                gp = gpar(
+                  col = alpha(munched$colour, munched$alpha)[start],
+                  fill = alpha(munched$colour, munched$alpha)[start],
+                  #lwd = munched$size[start] * .pt,
+                  lwd = 1,
+                  lty = munched$linetype[start],
+                  lineend = lineend,
+                  linejoin = linejoin,
+                  linemitre = linemitre
+                )
+            )
+
+            ############################
+            #LABEL ELEMENTS 
+            ############################
+
+            data.label = make.label.df(data)
+
+            lab <- data.label$label
+            lab <- parse_safe(as.character(lab))
+
+            data.label <- coord$transform(data.label, panel_params)
+
+            if (is.character(data.label$vjust)) {
+              data.label$vjust <- compute_just(data.label$vjust, data.label$y, data.label$x, data.label$angle)
+            }
+            if (is.character(data.label$hjust)) {
+              data.label$hjust <- compute_just(data.label$hjust, data.label$x, data.label$y, data.label$angle)
+            }
+
+            label_elements = textGrob(
+              lab,
+              data.label$x, data.label$y, default.units = "native",
+              hjust = data.label$hjust, vjust = data.label$vjust,
+              rot = data.label$angle,
+              gp = gpar(
+                col = alpha(data.label$colour, data.label$alpha),
+                fontsize = data.label$text.size * .pt,
+                fontfamily = data.label$family,
+                fontface = data.label$fontface,
+                lineheight = data.label$lineheight
+              )
+            )
+
+            gList(path_elements, label_elements)
+
+        } else if(unique(data$layout) == 'star'){
+            ############################
+            #STAR ELEMENTS 
+            ############################
+            # must be sorted on group
+            data.star = make.line.df.star(data)
+            data.star <- data.star[order(data.star$group), , drop = FALSE]
+            munched <- coord_munch(coord, data.star, panel_params)
+
+            # Silently drop lines with less than two points, preserving order
+            rows <- stats::ave(seq_len(nrow(munched)), munched$group, FUN = length)
+            munched <- munched[rows >= 2, ]
+            if (nrow(munched) < 2) return(zeroGrob())
+
+            # Work out grouping variables for grobs
+            n <- nrow(munched)
+            group_diff <- munched$group[-1] != munched$group[-n]
+            start <- c(TRUE, group_diff)
+            end <-   c(group_diff, TRUE)
+
+            id <- match(munched$group, unique(munched$group))
+            path_elements = polylineGrob(
+                munched$x, munched$y, id = id,
+                default.units = "native", arrow = arrow,
+                gp = gpar(
+                  col = alpha(munched$colour, munched$alpha)[start],
+                  fill = alpha(munched$colour, munched$alpha)[start],
+                  #lwd = munched$size[start] * .pt,
+                  lwd = 1,
+                  lty = munched$linetype[start],
+                  lineend = lineend,
+                  linejoin = linejoin,
+                  linemitre = linemitre
+                )
+            )
+
+            data.star.split = split(data.star, data.star$group)
+            data.star.x2 = bind_rows(lapply(data.star.split, function(x) x[2, ]))$x
+
+            ############################
+            #LABEL ELEMENTS 
+            ############################
+
+            data.label = make.label.df(data)
+            data.label$x = data.star.x2
+
+            lab <- data.label$label
+            lab <- parse_safe(as.character(lab))
+
+            data.label <- coord$transform(data.label, panel_params)
+
+            if (is.character(data.label$vjust)) {
+              data.label$vjust <- compute_just(data.label$vjust, data.label$y, data.label$x, data.label$angle)
+            }
+            if (is.character(data.label$hjust)) {
+              data.label$hjust <- compute_just(data.label$hjust, data.label$x, data.label$y, data.label$angle)
+            }
+
+            label_elements = textGrob(
+              lab,
+              data.label$x, data.label$y, default.units = "native",
+              hjust = data.label$hjust, vjust = data.label$vjust,
+              rot = data.label$angle,
+              gp = gpar(
+                col = alpha(data.label$colour, data.label$alpha),
+                fontsize = data.label$text.size * .pt,
+                fontfamily = data.label$family,
+                fontface = data.label$fontface,
+                lineheight = data.label$lineheight
+              )
+            )
+
+            gList(path_elements, label_elements)
+
+
         }
-        if (is.character(data.label$hjust)) {
-          data.label$hjust <- compute_just(data.label$hjust, data.label$x, data.label$y, data.label$angle)
-        }
 
-
-
-        label_elements = textGrob(
-          lab,
-          data.label$x, data.label$y, default.units = "native",
-          hjust = data.label$hjust, vjust = data.label$vjust,
-          rot = data.label$angle,
-          gp = gpar(
-            col = alpha(data.label$colour, data.label$alpha),
-            fontsize = data.label$text.size * .pt,
-            fontfamily = data.label$family,
-            fontface = data.label$fontface,
-            lineheight = data.label$lineheight
-          )
-        )
-
-
-
-
-
-        gList(line_elements, point_elements, path_elements, label_elements)
-        #path_elements
     }
 )
 
@@ -398,14 +643,62 @@ geom_simple_point <- function(mapping = NULL, data = NULL, stat = "identity",
   )
 }
 
-plot1 = ggplot(chr1, aes(x = start, y = expression, label = gene)) + 
+topnum = 100
+
+library(ggrepel)
+
+chr1.new = chr1
+chr1.new[sample(1:100, 70), ]$gene = NA
+
+
+plot.ggrepel = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = gene)) + 
     geom_point() +
     geom_line() +
-    geom_simple_point(angle = 90, hjust = 0, text.size = 2) +
+    geom_text_repel(
+        nudge_y = 200,
+        direction = 'x',
+        hjust = 1,
+        angle = 90,
+        segment.color = "grey50",
+        segment.linetype = 'dotted'
+        ) +
+    scale_y_continuous(limits = c(NA, 200)) +
+    #geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'star', linetype = 'dotted') +
     #geom_simple_point(colour = '#d8d654', linetype = 'dashed') +
     coord_cartesian(ylim = c(0, 200))
 
-pl(plot1)
+pl(plot.ggrepel)
+
+plot.cloud = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = gene)) + 
+    geom_point() +
+    geom_line() +
+    #geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'star', linetype = 'dotted') +
+    geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'cloud', linetype = 'dotted') +
+    #geom_simple_point(colour = '#d8d654', linetype = 'dashed') +
+    coord_cartesian(ylim = c(0, 200))
+
+pl(plot.cloud)
+
+
+plot.fan = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = gene)) + 
+    geom_point() +
+    geom_line() +
+    #geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'star', linetype = 'dotted') +
+    geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'fan', linetype = 'dotted') +
+    #geom_simple_point(colour = '#d8d654', linetype = 'dashed') +
+    coord_cartesian(ylim = c(0, 200))
+
+pl(plot.fan)
+
+plot.star = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = gene)) + 
+    geom_point() +
+    geom_line() +
+    #geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'star', linetype = 'dotted') +
+    geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'star', linetype = 'dotted') +
+    #geom_simple_point(colour = '#d8d654', linetype = 'dashed') +
+    coord_cartesian(ylim = c(0, 200))
+
+pl(plot.star)
 
 
     #geom_text(aes(label = gene))
