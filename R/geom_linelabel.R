@@ -36,18 +36,20 @@ head(chr1)
 linelabel_chr = chr1[c('start', 'expression', 'gene')]
 colnames(linelabel_chr) = c('x', 'y', 'label')
 
-make.line.df.fan = function(data.df){ data.df2 = data.df[c('x', 'y')]
+make.line.df.fan = function(data.df){
     data.df2 = data.df
+    data.df.naomit = data.df[!is.na(data.df$label), ]
     x2 = seq(
         min(data.df2$x),
         max(data.df2$x),
-        length.out = nrow(data.df)
+        length.out = nrow(data.df.naomit)
     )
 
     y2 = max(data.df2$y) + (max(data.df2$y) / 5)
 
+    data.df2 = data.df.naomit
+
     data.df2$group = 1:nrow(data.df2)
-    order(data.df2$x)
 
     verticallinedf = data.df2
     #colnames(verticallinedf) = c('x1', 'y1', 'x2', 'y2', 'group')
@@ -68,7 +70,7 @@ make.line.df.fan = function(data.df){ data.df2 = data.df[c('x', 'y')]
     linelabeldf1$y = max(data.df2$y) + (max(data.df2$y) / 10)
 
     data.df3 = bind_rows(linelabeldf1, linelabeldf2)
-    data.df3$label = data.df$label
+    data.df3$label = data.df2$label
     data.df3
 
     data.df4 = bind_rows(vert.line.df, data.df3)
@@ -196,7 +198,6 @@ make.line.df.cloud2 = function(data.df){
     data.df
     data.df.naomit = data.df[!is.na(data.df$label), ]
 
-
     x2 = seq(
         min(data.df$x),
         max(data.df$x),
@@ -204,8 +205,6 @@ make.line.df.cloud2 = function(data.df){
     )
 
     data.df = data.df.naomit
-
-    x2 is.na(data.df$label)
 
     y2 = max(data.df$y) + (max(data.df$y) / 5)
 
@@ -224,6 +223,8 @@ make.line.df.cloud2 = function(data.df){
 }
 
 make.line.df.cloud3 = function(data.df){
+    #makes points for cloud layout
+    data.df = data.df[!is.na(data.df$label), ]
     data.df2 = data.df[c('x', 'y')]
 
     data.df2$y = max(data.df$y) + max(data.df$y) / 10
@@ -232,12 +233,15 @@ make.line.df.cloud3 = function(data.df){
 
 make.label.df = function(data.df){
     data.df$y = max(data.df$y) + max(data.df$y) / 5
-    data.df$x = seq(
+    data.df.naomit = data.df[!is.na(data.df$label), ]
+    x2 = seq(
         min(data.df$x),
         max(data.df$x),
-        length.out = nrow(data.df)
+        length.out = nrow(data.df.naomit)
     )
-    data.df
+
+    data.df.naomit$x = x2
+    data.df.naomit
 }
 
 StatCloud1 = ggproto('StatCloud1', Stat,
@@ -350,10 +354,10 @@ stat_linelabel <- function(mapping = NULL, data = NULL, geom = "text",
 #GROB 
 ############################
 
-GeomSimplePoint <- ggproto("GeomSimplePoint", Geom,
+GeomLineLabel <- ggproto("GeomLineLabel", Geom,
     required_aes = c("x", "y"),
-    default_aes = aes(shape = 19, colour = "black", linetype = 'solid',
-        text.size = 3.88, angle = 0, hjust = 0.5,
+    default_aes = aes(shape = 19, colour = "black", linetype = 'dotted',
+        text.size = 4, angle = 90, hjust = 0,
         vjust = 0.5, alpha = NA, family = "", fontface = 1, lineheight = 1.2,
         layout = 'cloud'
         ),
@@ -558,7 +562,8 @@ GeomSimplePoint <- ggproto("GeomSimplePoint", Geom,
             #STAR ELEMENTS 
             ############################
             # must be sorted on group
-            data.star = make.line.df.star(data)
+            data.star = data[!is.na(data$label), ]
+            data.star = make.line.df.star(data.star)
             data.star <- data.star[order(data.star$group), , drop = FALSE]
             munched <- coord_munch(coord, data.star, panel_params)
 
@@ -633,15 +638,25 @@ GeomSimplePoint <- ggproto("GeomSimplePoint", Geom,
     }
 )
 
-geom_simple_point <- function(mapping = NULL, data = NULL, stat = "identity",
+geom_linelabel <- function(mapping = NULL, data = NULL, stat = "identity",
                               position = "identity", na.rm = FALSE, show.legend = NA, 
                               inherit.aes = TRUE, ...) {
   layer(
-    geom = GeomSimplePoint, mapping = mapping,  data = data, stat = stat, 
+    geom = GeomLineLabel, mapping = mapping,  data = data, stat = stat, 
     position = position, show.legend = show.legend, inherit.aes = inherit.aes,
     params = list(na.rm = na.rm, ...)
   )
 }
+
+#geom_simple_point <- function(mapping = NULL, data = NULL, stat = "identity",
+                              #position = "identity", na.rm = FALSE, show.legend = NA, 
+                              #inherit.aes = TRUE, ...) {
+  #layer(
+    #geom = GeomSimplePoint, mapping = mapping,  data = data, stat = stat, 
+    #position = position, show.legend = show.legend, inherit.aes = inherit.aes,
+    #params = list(na.rm = na.rm, ...)
+  #)
+#}
 
 topnum = 100
 
@@ -665,17 +680,16 @@ plot.ggrepel = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label
     scale_y_continuous(limits = c(NA, 200)) +
     #geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'star', linetype = 'dotted') +
     #geom_simple_point(colour = '#d8d654', linetype = 'dashed') +
-    coord_cartesian(ylim = c(0, 200))
+    coord_cartesian(ylim = c(0, 210))
 
 pl(plot.ggrepel)
 
 plot.cloud = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = gene)) + 
-    geom_point() +
-    geom_line() +
-    #geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'star', linetype = 'dotted') +
-    geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'cloud', linetype = 'dotted') +
-    #geom_simple_point(colour = '#d8d654', linetype = 'dashed') +
-    coord_cartesian(ylim = c(0, 200))
+    #geom_point() +
+    #geom_line() +
+    geom_linelabel(layout = 'cloud') +
+    coord_cartesian(ylim = c(0, 210)) +
+    theme_void()
 
 pl(plot.cloud)
 
@@ -683,34 +697,30 @@ pl(plot.cloud)
 plot.fan = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = gene)) + 
     geom_point() +
     geom_line() +
-    #geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'star', linetype = 'dotted') +
-    geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'fan', linetype = 'dotted') +
-    #geom_simple_point(colour = '#d8d654', linetype = 'dashed') +
-    coord_cartesian(ylim = c(0, 200))
+    geom_linelabel(layout = 'fan') +
+    coord_cartesian(ylim = c(0, 210))
 
 pl(plot.fan)
 
 plot.star = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = gene)) + 
     geom_point() +
     geom_line() +
-    #geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'star', linetype = 'dotted') +
-    geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'star', linetype = 'dotted') +
-    #geom_simple_point(colour = '#d8d654', linetype = 'dashed') +
-    coord_cartesian(ylim = c(0, 200))
+    geom_linelabel(layout = 'star') +
+    coord_cartesian(ylim = c(0, 210))
 
 pl(plot.star)
 
 
-    #geom_text(aes(label = gene))
-    #stat_star(linetype = 'dotted', color = '#888888') +
-    stat_fan(linetype = 'dotted', color = '#888888') +
-    #stat_cloud1() +
-    #stat_cloud2(linetype = 'dotted', color = '#888888') +
-    #stat_cloud3() +
-    stat_linelabel(angle = 90, hjust = 0, size = 2) 
-    #coord_cartesian(ylim = c(0, 250))
-    #stat_alex(linetype = 'dotted', color = '#888888')
-    #stat_chull(fill = NA, color = 'black')
+#geom_text(aes(label = gene))
+#stat_star(linetype = 'dotted', color = '#888888') +
+stat_fan(linetype = 'dotted', color = '#888888')
+#stat_cloud1() +
+#stat_cloud2(linetype = 'dotted', color = '#888888') +
+#stat_cloud3() +
+stat_linelabel(angle = 90, hjust = 0, size = 2) 
+#coord_cartesian(ylim = c(0, 250))
+#stat_alex(linetype = 'dotted', color = '#888888')
+#stat_chull(fill = NA, color = 'black')
 
 
 pl(plot1)
@@ -735,16 +745,6 @@ plot1 = ggplot(chr1, aes(x = start, y = expression, label = gene)) +
 pl(plot1)
 
 
-
-geom_simple_point <- function(mapping = NULL, data = NULL, stat = "identity",
-                              position = "identity", na.rm = FALSE, show.legend = NA, 
-                              inherit.aes = TRUE, ...) {
-  layer(
-    geom = GeomSimplePoint, mapping = mapping,  data = data, stat = stat, 
-    position = position, show.legend = show.legend, inherit.aes = inherit.aes,
-    params = list(na.rm = na.rm, ...)
-  )
-}
 
 GeomLongFunction <- ggproto("GeomLongFunction", Geom,
     required_aes = c("x", "y"),
