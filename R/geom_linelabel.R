@@ -383,7 +383,7 @@ GeomLineLabel <- ggproto("GeomLineLabel", Geom,
     default_aes = aes(shape = 19, colour = "black", linetype = 'dotted',
         text.size = 4, angle = 90, hjust = 0,
         vjust = 0.5, alpha = NA, family = "", fontface = 1, lineheight = 1.2,
-        layout = 'cloud',
+        layout = 'fan',
         nudge_y = 0,
         nudge_x = 0
         ),
@@ -784,22 +784,47 @@ expression.gen = expression.gen * 100
 chr1.new$expression = expression.gen
 
 
-plot.ggrepel = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = gene)) + 
+plot.ggrepel = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = sig.genes)) + 
     geom_point() +
     geom_line() +
     geom_text_repel(
-        nudge_y = 200,
+        nudge_y = 250,
         direction = 'x',
         hjust = 1,
         angle = 90,
         segment.color = "grey50",
         segment.linetype = 'dotted'
         ) +
-    scale_y_continuous(limits = c(NA, 180))
+    scale_y_continuous(limits = c(NA, 330))
     #geom_simple_point(angle = 90, hjust = 0, text.size = 2, layout = 'star', linetype = 'dotted') +
     #geom_simple_point(colour = '#d8d654', linetype = 'dashed') +
 
-pl(plot.ggrepel)
+
+pl(
+    ggplot(chr1.new, aes(x = start, y = expression, label = sig.genes)) +
+        geom_point() +
+        geom_line() +
+        geom_text_repel(
+            nudge_y = 250,
+            direction = 'x',
+            hjust = 1,
+            angle = 90,
+            segment.color = "grey50",
+            segment.linetype = 'dotted'
+            ) +
+        scale_y_continuous(limits = c(NA, 330))
+)
+
+pl(
+    ggplot(chr1.new, aes(x = start, y = expression, label = sig.genes)) +
+        geom_point() +
+        geom_line() +
+        geom_linelabel() +
+        scale_y_continuous(limits = c(NA, 330))
+)
+
+
+pl(plot.ggrepel, 5, 5)
 
 chr1.new$sig.genes = NA
 chr1.new$sig.genes[chr1.new$expression > 100] = chr1.new$gene[chr1.new$expression > 100]
@@ -811,7 +836,7 @@ plot.star = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = 
     scale_y_continuous(limits = c(NA, 300))
     #coord_cartesian(ylim = c(0, 400))
 
-pl(plot.star)
+pl(plot.star, 5, 5)
 
 plot.straight = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = sig.genes)) + 
     geom_point() +
@@ -822,22 +847,22 @@ plot.straight = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, labe
 
 pl(plot.straight)
 
-plot.cloud = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = gene)) + 
+plot.cloud = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = sig.genes)) + 
     geom_point() +
     geom_line() +
-    geom_linelabel(layout = 'cloud', nudge_y = -20, text.size = 2) +
+    geom_linelabel(layout = 'cloud', nudge_y = -20, text.size = 4) +
     coord_cartesian(ylim = c(0, 300)) 
 
 pl(plot.cloud)
 
 
-plot.fan = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = gene)) + 
+plot.fan = ggplot(chr1.new[1:topnum, ], aes(x = start, y = expression, label = sig.genes)) + 
     geom_point() +
     geom_line() +
-    geom_linelabel(layout = 'fan', nudge_y = -200) +
-    coord_cartesian(ylim = c(0, 210))
+    geom_linelabel(layout = 'fan', nudge_y = -20) +
+    coord_cartesian(ylim = c(0, 330))
 
-pl(plot.fan)
+pl(plot.fan, 5, 5)
 
 
 #geom_text(aes(label = gene))
