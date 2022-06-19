@@ -36,6 +36,9 @@ test_that("label height equals fan height", {
         max(data.fan$y, na.rm = T)
     )
 
+    #here the fan.height argument is not 1, and so
+    #the middle values (top of vertical segment)
+    #should not equal the highest values
     expect_false(
         sort(unique(data.fan$y))[2] == sort(unique(data.fan$y))[3],
     )
